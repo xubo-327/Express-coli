@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>快递问题件管理系统</title>
+    <title>快递查单管理系统 - 批次管理</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         * {
@@ -17,7 +16,7 @@
         
         :root {
             --primary: #4361ee;
-            --primary-light: #5e7cff;
+            --primary-light: #5e极速快递7cff;
             --secondary: #3f37c9;
             --light: #f8f9fa;
             --dark: #2d3748;
@@ -29,6 +28,7 @@
             --admin-bg: #f0f7ff;
             --warehouse: #319795;
             --dispatched: #3182ce;
+            --batch-color: #805ad5;
         }
         
         body {
@@ -133,6 +133,8 @@
             box-shadow: var(--card-shadow);
             transition: all 0.3s ease;
             border-left: 4px solid var(--primary);
+            position: relative;
+            overflow: hidden;
         }
         
         .stat-card:hover {
@@ -152,6 +154,17 @@
             color: var(--primary);
         }
         
+        .batch-indicator {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--batch-color);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 0 0 0 10px;
+            font-size: 12px;
+        }
+        
         /* 搜索区域 */
         .search-section {
             background: white;
@@ -164,9 +177,9 @@
             display: flex;
             margin-bottom: 20px;
             background: var(--light);
-            border-radius: 50px;
+            border-radius: 50极速快递px;
             overflow: hidden;
-            box-shadow: 0 2极速快递px 8px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
         
         .search-box input {
@@ -221,6 +234,7 @@
             gap: 10px;
             margin-bottom: 20px;
             flex-wrap: wrap;
+            align-items: center;
         }
         
         .filter-btn {
@@ -237,6 +251,24 @@
             background: var(--primary);
             color: white;
             border-color: var(--primary);
+        }
+        
+        .batch-filter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+            font-size: 14px;
+        }
+        
+        .batch-filter select {
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 1px solid #d0ddf7;
+            background: white;
+            cursor: pointer;
+            min-width: 150px;
+            outline: none;
         }
         
         .table-container {
@@ -325,6 +357,15 @@
         .status-dispatched {
             background: rgba(66, 153, 225, 0.1);
             color: #3182ce;
+        }
+        
+        .batch-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            background: rgba(128, 90, 213, 0.1);
+            color: var(--batch-color);
         }
         
         .action-btn {
@@ -661,6 +702,29 @@
             .upload-options {
                 flex-direction: column;
             }
+            
+            .filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .batch-filter {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            .batch-filter select {
+                width: 100%;
+            }
+        }
+        
+        .admin-label {
+            background: var(--primary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
         }
     </style>
 </head>
@@ -669,7 +733,7 @@
         <header>
             <div class="logo">
                 <div class="logo-icon">
-                    <i class="fas fa-box"></i>
+                    <i class="fas fa-boxes"></i>
                 </div>
                 <div class="logo-text">快递问题件管理系统</div>
             </div>
@@ -686,20 +750,24 @@
             <!-- 统计卡片 -->
             <div class="stats-grid">
                 <div class="stat-card">
+                    <div class="batch-indicator">批次: BATCH-0725</div>
                     <h3>在仓库问题件</h3>
                     <div class="count" id="warehouseCount">632</div>
                 </div>
                 <div class="stat-card">
+                    <div class="batch-indicator">批次: BATCH-0720</div>
                     <h3>已发出批次</h3>
                     <div class="count" id="dispatchedCount">8</div>
                 </div>
                 <div class="stat-card">
+                    <div class="batch-indicator">本周新增</div>
                     <h3>待处理问题件</h3>
                     <div class="count" id="pendingCount">198</div>
                 </div>
                 <div class="stat-card">
-                    <h3>本周新增</h3>
-                    <div class="count" id="newCount">47</div>
+                    <div class="batch-indicator">本月</div>
+                    <h3>批次总数</h3>
+                    <div class="count" id="batchCount">15</div>
                 </div>
             </div>
             
@@ -714,7 +782,7 @@
                     <button onclick="searchData()"><i class="fas fa-search"></i> 搜索</button>
                 </div>
                 <p style="color: var(--gray); margin-top: 10px; font-size: 14px;">
-                    <i class="fas fa-info-circle"></i> 可通过快递单号查询快递状态
+                    <i class="fas fa-info-circle"></i> 可通过快递单号查询快递状态和批次信息
                 </p>
                 <div id="searchResult" style="margin-top: 20px; display: none;">
                     <div style="background: #f0f7ff; padding: 15px; border-radius: 10px;">
@@ -727,20 +795,28 @@
             <!-- 快递列表 -->
             <div class="courier-list">
                 <div class="section-title">
-                    <i class="fas fa-list"></i>
+                    <极速快递i class="fas fa-list"></i>
                     <div>快递信息列表</div>
                     <div style="margin-left: auto; font-size: 14px; color: var(--gray);">共 <span id="totalCount">1098</span> 条记录</div>
                 </div>
                 
                 <div class="filters">
-                    <button class="filter-btn active">全部</button>
-                    <button class="filter-btn">在仓库</button>
-                    <button class="filter-btn">已发出</button>
-                    <button class="filter-btn">中通</button>
-                    <button class="filter-btn">圆通</button>
-                    <button class="filter-btn">顺丰</button>
-                    <button class="filter-btn">德邦</button>
-                    <button class="filter-btn">邮政EMS</button>
+                    <button class="filter-btn active" data-filter="all">全部</button>
+                    <button class="filter-btn" data-filter="status:在仓库">在仓库</button>
+                    <button class="filter-btn" data-filter="status:已发出">已发出</button>
+                    <button class="filter-btn" data-filter="company:中通">中通</button>
+                    <button class="filter-btn" data-filter="company:圆通">圆通</button>
+                    <button class="filter-btn" data-filter="company:顺丰">顺丰</button>
+                    <button class="filter-btn" data-filter="company:德邦">德邦</button>
+                    <button class="filter-btn" data-filter="company:邮政EMS">邮政EMS</button>
+                    
+                    <div class="batch-filter">
+                        <span>批次筛选：</span>
+                        <select id="batchFilter">
+                            <option value="all">全部批次</option>
+                            <!-- 批次选项将通过JavaScript动态生成 -->
+                        </select>
+                    </div>
                 </div>
                 
                 <div class="table-container">
@@ -750,9 +826,10 @@
                                 <th>来源公司</th>
                                 <th>快递单号</th>
                                 <th>问题类型</th>
+                                <th>批次信息</th>
                                 <th>登记时间</th>
                                 <th>状态</th>
-                                <th class="admin-only">操作</th>
+                                <th class="admin-only">操作 <span class="admin-label">管理员</span></th>
                             </tr>
                         </thead>
                         <tbody id="courierTableBody">
@@ -775,7 +852,7 @@
             <div class="admin-section">
                 <h2 class="section-title">
                     <i class="fas fa-user-cog"></i>
-                    管理员功能
+                    管理员功能 <span class="admin-label">管理员专属</span>
                 </h2>
                 
                 <div class="admin-actions">
@@ -784,6 +861,9 @@
                     </button>
                     <button class="admin-btn" onclick="exportData()">
                         <i class="fas fa-file-export"></i> 导出所有数据
+                    </button>
+                    <button class="admin-btn" onclick="showBatchManager()">
+                        <i class="fas fa-layer-group"></i> 批次管理
                     </button>
                 </div>
                 
@@ -809,6 +889,9 @@
                     <button class="template-btn" onclick="downloadTemplate()">
                         <i class="fas fa-download"></i> 下载Excel模板
                     </button>
+                    <p style="margin-top: 10px; font-size: 13px; color: var(--gray);">
+                        <i class="fas fa-info-circle"></i> 模板包含批次栏，请按格式填写数据
+                    </p>
                 </div>
             </div>
         </div>
@@ -865,7 +948,7 @@
                         <option value="中通">中通</option>
                         <option value="圆通">圆通</option>
                         <option value="顺丰">顺丰</option>
-                        <option value="德邦">德邦</option>
+                        <option value="德邦">德邦极速快递</option>
                         <option value="邮政EMS">邮政EMS</option>
                         <option value="申通">申通</option>
                     </select>
@@ -880,6 +963,10 @@
                         <option value="地址错误">地址错误</option>
                         <option value="其他">其他</option>
                     </select>
+                </div>
+                <div class="input-group">
+                    <label for="batch">批次信息</label>
+                    <input type="text" id="batch" placeholder="输入批次号 (如: BATCH-0725)">
                 </div>
                 <div class="input-group">
                     <label for="status">快递状态</label>
@@ -926,27 +1013,107 @@
         </div>
     </div>
     
+    <!-- 批次管理模态框 -->
+    <div class="modal" id="batchModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-layer-group"></i> 批次管理</h2>
+                <div class="close-modal" onclick="closeModal('batchModal')">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div class="admin-actions">
+                    <button class="admin-btn" onclick="showNewBatchModal()">
+                        <i class="fas fa-plus"></i> 创建新批次
+                    </button>
+                </div>
+                
+                <div class="table-container" style="max-height: 400px; margin-top: 20px;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>批次号</th>
+                                <th>创建日期</th>
+                                <th>单号数量</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>BATCH-0725</td>
+                                <td>2023-07-25</td>
+                                <td>42</td>
+                                <td><span class="status-badge status-dispatched">已发出</span></td>
+                                <td>
+                                    <button class="action-btn edit-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn delete-btn" onclick="confirmBatchDelete('BATCH-0725')"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>BATCH-0720</td>
+                                <td>2023-07-20</td>
+                                <td>35</td>
+                                <td><span class="status-badge status-dispatched">已发出</span></td>
+                                <td>
+                                    <button class="action-btn edit-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn delete-btn" onclick="confirmBatchDelete('BATCH-0720')"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>BATCH-0718</td>
+                                <td>2023-07-18</td>
+                                <td>28</td>
+                                <td><span class="status-badge status-warehouse">在仓库</span></td>
+                                <td>
+                                    <button class="action-btn edit-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn delete-btn" onclick="confirmBatchDelete('BATCH-0718')"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>BATCH-0715</td>
+                                <td>2023-07-15</td>
+                                <td>22</td>
+                                <td><span class="status-badge status-warehouse">在仓库</span></td>
+                                <td>
+                                    <button class="action-btn edit-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn delete-btn" onclick="confirmBatchDelete('BATCH-0715')"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script>
-        // 模拟快递数据
+        // 模拟快递数据（包含批次信息）
         const courierData = [
-            { id: 1, company: "中通", number: "75761365943766", issue: "破损", date: "2023-07-15", status: "在仓库" },
-            { id: 2, company: "申通", number: "77637205707615", issue: "丢失", date: "2023-07-16", status: "在仓库" },
-            { id: 3, company: "圆通", number: "89245678321098", issue: "延误", date: "2023-07-14", status: "在仓库" },
-            { id: 4, company: "顺丰", number: "65432109876543", issue: "破损", date: "2023-07-17", status: "在仓库" },
-            { id: 5, company: "德邦", number: "12345678901234", issue: "地址错误", date: "2023-07-13", status: "已发出" },
-            { id: 6, company: "邮政EMS", number: "56789012345678", issue: "延误", date: "2023-07-18", status: "已发出" },
-            { id: 7, company: "中通", number: "23456789012345", issue: "破损", date: "2023-07-19", status: "已发出" },
-            { id: 8, company: "顺丰", number: "34567890123456", issue: "延误", date: "2023-07-12", status: "已发出" }
+            { id: 1, company: "中通", number: "75761365943766", issue: "破损", batch: "BATCH-0725", date: "2023-07-15", status: "在仓库" },
+            { id: 2, company: "申通", number: "77637205707615", issue: "丢失", batch: "BATCH-0720", date: "2023-07-16", status: "在仓库" },
+            { id: 3, company: "圆通", number: "89245678321098", issue: "延误", batch: "BATCH-0725", date: "2023-07-14", status: "在仓库" },
+            { id: 4, company: "顺丰", number: "65432109876543", issue: "破损", batch: "BATCH-0720", date: "2023-07-17", status: "在仓库" },
+            { id: 5, company: "德邦", number: "12345678901234", issue: "地址错误", batch: "BATCH-0718", date: "2023-07-13", status: "已发出" },
+            { id: 6, company: "邮政EMS", number: "56789012345678", issue: "延误", batch: "BATCH-0718", date: "2023-07-18", status: "已发出" },
+            { id: 7, company: "中通", number: "23456789012345", issue: "破损", batch: "BATCH-0715", date: "2023-07-19", status: "已发出" },
+            { id: 8, company: "顺丰", number: "34567890123456", issue: "延误", batch: "BATCH-0715", date: "2023-07-12", status: "已发出" }
         ];
         
         // 当前登录状态
         let isAdmin = false;
         let currentUploadType = "";
+        let currentFilters = {
+            status: null,
+            company: null,
+            batch: "all"
+        };
         
         // 初始化页面
         function initializePage() {
             renderCourierTable();
             updateStats();
+            setupBatchFilter();
+            setupFilterButtons();
             
             // 设置默认日期
             document.getElementById('registerDate').valueAsDate = new Date();
@@ -961,12 +1128,89 @@
             });
         }
         
+        // 设置批次筛选下拉框
+        function setupBatchFilter() {
+            const batchFilter = document.getElementById('batchFilter');
+            batchFilter.innerHTML = '<option value="all">全部批次</option>';
+            
+            // 获取所有批次号并去重
+            const batches = [...new Set(courierData.map(item => item.batch))];
+            
+            // 添加选项
+            batches.forEach(batch => {
+                const option = document.createElement('option');
+                option.value = batch;
+                option.textContent = batch;
+                batchFilter.appendChild(option);
+            });
+            
+            // 添加批次筛选事件
+            batchFilter.addEventListener('change', function() {
+                currentFilters.batch = this.value;
+                applyFilters();
+            });
+        }
+        
+        // 设置筛选按钮事件
+        function setupFilterButtons() {
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // 移除所有按钮的active类
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    
+                    // 添加active类到当前按钮
+                    this.classList.add('active');
+                    
+                    const filter = this.dataset.filter;
+                    if (filter === 'all') {
+                        // 重置所有筛选
+                        currentFilters.status = null;
+                        currentFilters.company = null;
+                    } else {
+                        const [type, value] = filter.split(':');
+                        if (type === 'status') {
+                            currentFilters.status = value;
+                            currentFilters.company = null;
+                        } else if (type === 'company') {
+                            currentFilters.company = value;
+                            currentFilters.status = null;
+                        }
+                    }
+                    
+                    applyFilters();
+                });
+            });
+        }
+        
+        // 应用所有筛选条件
+        function applyFilters() {
+            let filteredData = courierData;
+            
+            // 应用状态筛选
+            if (currentFilters.status) {
+                filteredData = filteredData.filter(item => item.status === currentFilters.status);
+            }
+            
+            // 应用公司筛选
+            if (currentFilters.company) {
+                filteredData = filteredData.filter(item => item.company === currentFilters.company);
+            }
+            
+            // 应用批次筛选
+            if (currentFilters.batch && currentFilters.batch !== 'all') {
+                filteredData = filteredData.filter(item => item.batch === currentFilters.batch);
+            }
+            
+            renderCourierTable(filteredData);
+        }
+        
         // 渲染快递表格
-        function renderCourierTable() {
+        function renderCourierTable(data = courierData) {
             const tableBody = document.getElementById('courierTableBody');
             tableBody.innerHTML = '';
             
-            courierData.forEach(item => {
+            data.forEach(item => {
                 const row = document.createElement('tr');
                 
                 // 公司名称带样式
@@ -984,23 +1228,32 @@
                 // 状态带样式
                 const statusClass = item.status === "在仓库" ? "status-warehouse" : "status-dispatched";
                 
+                // 操作列（管理员可见）
+                let operations = '<td class="admin-only"></td>';
+                if (isAdmin) {
+                    operations = `
+                        <td class="admin-only">
+                            <button class="action-btn edit-btn" onclick="editCourier(${item.id})"><i class="fas fa-edit"></i></button>
+                            <button class="action-btn delete-btn" onclick="confirmDelete(${item.id})"><i class="fas fa-trash"></i></button>
+                        </td>
+                    `;
+                }
+                
                 row.innerHTML = `
                     <td><span class="courier-badge ${companyBadge}">${item.company}</span></td>
                     <td>${item.number}</td>
                     <td>${item.issue}</td>
+                    <td><span class="batch-badge">${item.batch}</span></td>
                     <td>${item.date}</td>
                     <td><span class="status-badge ${statusClass}">${item.status}</span></td>
-                    <td class="admin-only">
-                        <button class="action-btn edit-btn" onclick="editCourier(${item.id})"><i class="fas fa-edit"></i></button>
-                        <button class="action-btn delete-btn" onclick="deleteCourier(${item.id})"><i class="fas fa-trash"></i></button>
-                    </td>
+                    ${operations}
                 `;
                 
                 tableBody.appendChild(row);
             });
             
             // 更新总数
-            document.getElementById('totalCount').textContent = courierData.length;
+            document.getElementById('totalCount').textContent = data.length;
         }
         
         // 更新统计数据
@@ -1008,12 +1261,12 @@
             const warehouseCount = courierData.filter(item => item.status === "在仓库").length;
             const dispatchedCount = courierData.filter(item => item.status === "已发出").length;
             const pendingCount = Math.floor(warehouseCount * 0.3);
-            const newCount = Math.floor(warehouseCount * 0.1);
+            const batchCount = new Set(courierData.map(item => item.batch)).size;
             
             document.getElementById('warehouseCount').textContent = warehouseCount;
             document.getElementById('dispatchedCount').textContent = dispatchedCount;
             document.getElementById('pendingCount').textContent = pendingCount;
-            document.getElementById('newCount').textContent = newCount;
+            document.getElementById('batchCount').textContent = batchCount;
         }
         
         // 显示登录模态框
@@ -1037,6 +1290,7 @@
                 document.getElementById('adminToggleBtn').innerHTML = '<i class="fas fa-sign-out-alt"></i> <span>退出管理</span>';
                 closeModal('loginModal');
                 showNotification('登录成功', '管理员功能已启用');
+                renderCourierTable(); // 重新渲染表格显示操作按钮
             } else {
                 showNotification('登录失败', '管理员账号或密码错误', true);
             }
@@ -1048,6 +1302,7 @@
             document.body.classList.remove('admin-view');
             document.getElementById('adminToggleBtn').innerHTML = '<i class="fas fa-user-shield"></i> <span>管理员登录</span>';
             showNotification('已退出管理', '返回普通用户视图');
+            renderCourierTable(); // 重新渲染表格隐藏操作按钮
         }
         
         // 显示添加快递模态框
@@ -1055,6 +1310,7 @@
             document.getElementById('courierNumber').value = '';
             document.getElementById('courierCompany').value = '';
             document.getElementById('issueType').value = '';
+            document.getElementById('batch').value = 'BATCH-' + new Date().toISOString().slice(5,7) + new Date().toISOString().slice(8,10);
             document.getElementById('status').value = '在仓库';
             document.getElementById('registerDate').valueAsDate = new Date();
             document.getElementById('addCourierModal').style.display = 'flex';
@@ -1065,10 +1321,11 @@
             const number = document.getElementById('courierNumber').value;
             const company = document.getElementById('courierCompany').value;
             const issue = document.getElementById('issueType').value;
+            const batch = document.getElementById('batch').value;
             const status = document.getElementById('status').value;
             const date = document.getElementById('registerDate').value;
             
-            if (!number || !company || !issue) {
+            if (!number || !company || !issue || !batch) {
                 showNotification('添加失败', '请填写所有必填字段', true);
                 return;
             }
@@ -1086,9 +1343,13 @@
                 company: company,
                 number: number,
                 issue: issue,
+                batch: batch,
                 date: date,
                 status: status
             });
+            
+            // 更新批次筛选器
+            setupBatchFilter();
             
             renderCourierTable();
             updateStats();
@@ -1103,24 +1364,39 @@
                 document.getElementById('courierNumber').value = item.number;
                 document.getElementById('courierCompany').value = item.company;
                 document.getElementById('issueType').value = item.issue;
+                document.getElementById('batch').value = item.batch;
                 document.getElementById('status').value = item.status;
                 document.getElementById('registerDate').value = item.date;
                 document.getElementById('addCourierModal').style.display = 'flex';
-                
-                // 在实际应用中，这里会设置编辑状态
+            }
+        }
+        
+        // 删除快递确认
+        function confirmDelete(id) {
+            if (confirm('确定要删除这个快递信息吗？此操作不可撤销！')) {
+                deleteCourier(id);
             }
         }
         
         // 删除快递
         function deleteCourier(id) {
-            if (confirm('确定要删除这个快递信息吗？')) {
-                const index = courierData.findIndex(item => item.id === id);
-                if (index !== -1) {
-                    courierData.splice(index, 1);
-                    renderCourierTable();
-                    updateStats();
-                    showNotification('删除成功', '快递信息已删除');
-                }
+            const index = courierData.findIndex(item => item.id === id);
+            if (index !== -1) {
+                courierData.splice(index, 1);
+                renderCourierTable();
+                updateStats();
+                showNotification('删除成功', '快递信息已删除');
+                
+                // 更新批次筛选器
+                setupBatchFilter();
+            }
+        }
+        
+        // 批次删除确认
+        function confirmBatchDelete(batchId) {
+            if (confirm(`确定要删除批次 ${batchId} 吗？此操作会删除该批次所有快递信息！`)) {
+                // 在实际应用中，这里会执行批次删除逻辑
+                showNotification('删除成功', `批次 ${batchId} 已删除`);
             }
         }
         
@@ -1163,12 +1439,14 @@
                     const status = currentUploadType === 'warehouse' ? '在仓库' : '已发出';
                     const companies = ['中通', '圆通', '顺丰', '德邦', '邮政EMS', '申通'];
                     const issues = ['破损', '丢失', '延误', '地址错误', '其他'];
+                    const batches = ['BATCH-0725', 'BATCH-0720', 'BATCH-0718', 'BATCH-0715'];
                     
                     courierData.push({
                         id: newId,
                         company: companies[Math.floor(Math.random() * companies.length)],
                         number: Math.floor(Math.random() * 100000000000000).toString().padStart(14, '0'),
                         issue: issues[Math.floor(Math.random() * issues.length)],
+                        batch: batches[Math.floor(Math.random() * batches.length)],
                         date: new Date().toISOString().split('T')[0],
                         status: status
                     });
@@ -1176,6 +1454,9 @@
                 
                 renderCourierTable();
                 updateStats();
+                
+                // 更新批次筛选器
+                setupBatchFilter();
                 
                 const typeName = currentUploadType === 'warehouse' ? '在仓库问题件' : '已发出单号';
                 showNotification('上传成功', `${typeName}数据已导入，新增${newCount}条记录`);
@@ -1186,17 +1467,18 @@
         function downloadTemplate() {
             // 创建模拟的Excel文件
             const templateData = [
-                ["快递单号", "快递公司", "问题类型", "状态", "发出时间"],
-                ["12345678901234", "中通", "破损", "已发出", "2023-07-25"],
-                ["", "", "", "滞留仓库", ""],
-                ["说明：", "", "", "", ""],
-                ["1. 状态默认为'已发出'，问题件请填写'滞留仓库'", "", "", "", ""],
-                ["2. 发出时间只有已发出单号需要填写", "", "", "", ""]
+                ["快递单号", "快递公司", "问题类型", "批次号", "状态", "发出时间"],
+                ["12345678901234", "中通", "破损", "BATCH-0725", "已发出", "2023-07-25"],
+                ["", "", "", "", "滞留仓库", ""],
+                ["说明：", "", "", "", "", ""],
+                ["1. 状态默认为'已发出'，问题件请填写'滞留仓库'", "", "", "", "", ""],
+                ["2. 批次号格式为 BATCH-月日 (如: BATCH-0725)", "", "", "", "", ""],
+                ["3. 发出时间只有已发出单号需要填写", "", "", "", "", ""]
             ];
             
             // 创建工作簿
             const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(templateData);
+            const ws = XLSX.utils.aoa_to_sheet(template极速快递Data);
             XLSX.utils.book_append_sheet(wb, ws, "快递数据模板");
             
             // 导出文件
@@ -1211,6 +1493,7 @@
                 "快递单号": item.number,
                 "快递公司": item.company,
                 "问题类型": item.issue,
+                "批次号": item.batch,
                 "状态": item.status,
                 "登记时间": item.date
             }));
@@ -1251,6 +1534,7 @@
                             </div>
                             <div>公司: ${item.company}</div>
                             <div>问题: ${item.issue}</div>
+                            <div>批次: <span class="batch-badge">${item.batch}</span></div>
                             <div>日期: ${item.date}</div>
                         </div>
                     `;
@@ -1262,6 +1546,11 @@
                 contentDiv.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fas fa-exclamation-circle" style="font-size: 24px; color: var(--danger); margin-bottom: 10px;"></i><p>没有找到匹配的快递单号</p></div>';
                 resultDiv.style.display = 'block';
             }
+        }
+        
+        // 显示批次管理
+        function showBatchManager() {
+            document.getElementById('batchModal').style.display = 'flex';
         }
         
         // 显示通知
