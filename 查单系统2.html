@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快递问题件管理系统 - 批次管理</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --primary: #4361ee;
+            --primary-light: #5e极速快递7cff;
+            --secondary: #3f37c9;
+            --light: #f8f9fa;
+            --dark: #2d3748;
+            --gray: #718096;
+            --success: #48bb78;
+            --warning: #ecc94b;
+            --danger: #e53e3e;
+            --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            --admin-bg: #f0f7ff;
+            --warehouse: #319795;
+            --dispatched: #3182ce;
+            --batch-color: #805ad5;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%);
+            min-height: 100vh;
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* 顶部导航 */
+        header {
+            background: white;
+            border-radius: 16px;
+            padding: 15px 30px;
+            margin-bottom: 25px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            font-size: 28px;
+            color: var(--primary);
+        }
+        
+        .logo-text {
+            font-size: 22px;
+            font-weight: 700;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .admin-toggle {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        
+        .admin-toggle:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        /* 内容区域 */
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+        }
+        
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--primary);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+        
+        .stat-card h3 {
+            font-size: 15px;
+            color: var(--gray);
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .count {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .batch-indicator {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--batch-color);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 0 0 0 10px;
+            font-size: 12px;
+        }
+        
+        /* 搜索区域 */
+        .search-section {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .search-box {
+            display: flex;
+            margin-bottom: 20px;
+            background: var(--light);
+            border-radius: 50极速快递px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .search-box input {
+            flex: 1;
+            padding: 16px 25px;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 16px;
+        }
+        
+        .search-box button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 30px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s ease;
+        }
+        
+        .search-box button:hover {
+            background: var(--secondary);
+        }
+        
+        /* 快递列表 */
+        .courier-list {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .section-title i {
+            color: var(--primary);
+        }
+        
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            background: #f0f7ff;
+            border: 1px solid #d0ddf7;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .batch-filter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+            font-size: 14px;
+        }
+        
+        .batch-filter select {
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 1px solid #d0ddf7;
+            background: white;
+            cursor: pointer;
+            min-width: 150px;
+            outline: none;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table th {
+            background: #f7f9ff;
+            color: var(--dark);
+            text-align: left;
+            padding: 14px 16px;
+            font-weight: 600;
+            font-size: 14px;
+            position: sticky;
+            top: 0;
+        }
+        
+        .data-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f1f1;
+            font-size: 14px;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f8f9ff;
+        }
+        
+        .courier-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+        
+        .badge-zt {
+            background: rgba(255, 0, 0, 0.08);
+            color: #e53e3e;
+        }
+        
+        .badge-yt {
+            background: rgba(0, 128, 0, 0.08);
+            color: #38a169;
+        }
+        
+        .badge-sf {
+            background: rgba(0, 0, 255, 0.08);
+            color: #3182ce;
+        }
+        
+        .badge-db {
+            background: rgba(255, 165, 0, 0.08);
+            color: #dd6b20;
+        }
+        
+        .badge-yz {
+            background: rgba(128, 0, 128, 0.08);
+            color: #805ad5;
+        }
+        
+        .badge-st {
+            background: rgba(255, 69, 0, 0.08);
+            color: #e53e3e;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .status-warehouse {
+            background: rgba(56, 178, 172, 0.1);
+            color: #319795;
+        }
+        
+        .status-dispatched {
+            background: rgba(66, 153, 225, 0.1);
+            color: #3182ce;
+        }
+        
+        .batch-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            background: rgba(128, 90, 213, 0.1);
+            color: var(--batch-color);
+        }
+        
+        .action-btn {
+            padding: 6px 12px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            margin-right: 5px;
+            transition: all 0.3s;
+        }
+        
+        .edit-btn {
+            background: #e6fffa;
+            color: #319795;
+            border: 1px solid #81e6d9;
+        }
+        
+        .delete-btn {
+            background: #fff5f5;
+            color: #e53e3e;
+            border: 1px solid #fc8181;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 25px;
+            gap: 8px;
+        }
+        
+        .pagination button {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .pagination button:hover, .pagination button.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        /* 管理员专属内容 - 默认隐藏 */
+        .admin-section {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            display: none;
+        }
+        
+        .admin-view .admin-section {
+            display: block;
+        }
+        
+        .admin-actions {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .admin-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        
+        .admin-btn:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+        }
+        
+        .upload-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .upload-option {
+            flex: 1;
+            background: var(--admin-bg);
+            border: 1px dashed var(--primary);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .upload-option:hover {
+            background: rgba(67, 97, 238, 0.05);
+            transform: translateY(-3px);
+        }
+        
+        .upload-icon {
+            font-size: 40px;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        
+        /* 通知 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 18px 22px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transform: translateX(150%);
+            transition: transform 0.4s ease;
+            z-index: 1000;
+            border-left: 4px solid var(--success);
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification i {
+            font-size: 22px;
+            color: var(--success);
+        }
+        
+        .notification.error {
+            border-left: 4px solid var(--danger);
+        }
+        
+        .notification.error i {
+            color: var(--danger);
+        }
+        
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 500px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .modal-header {
+            background: linear-gradient(120deg, var(--primary), var(--secondary));
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .modal-header h2 {
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .modal-body {
+            padding: 30px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 14px;
+        }
+        
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 14px 18px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        
+        .input-group input:focus, .input-group select:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 15px;
+            padding: 0 30px 30px;
+        }
+        
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .modal-btn.cancel {
+            background: #f0f2f5;
+            color: var(--dark);
+            border: 1px solid #ddd;
+        }
+        
+        .modal-btn.confirm {
+            background: var(--primary);
+            color: white;
+            border: none;
+        }
+        
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .template-box {
+            background: #f0f7ff;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .template-box p {
+            margin-bottom: 15px;
+        }
+        
+        .template-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .logo-text {
+                font-size: 18px;
+            }
+            
+            .admin-toggle span {
+                display: none;
+            }
+            
+            .admin-toggle {
+                padding: 8px;
+                border-radius: 50%;
+                width: 36px;
+                height: 36px;
+                display: flex;
+                justify-content: center;
+            }
+            
+            .section-title {
+                font-size: 18px;
+            }
+            
+            .search-box input {
+                padding: 14px 20px;
+            }
+            
+            .search-box button {
+                padding: 0 20px;
+            }
+            
+            .admin-actions {
+                flex-direction: column;
+            }
+            
+            .upload-options {
+                flex-direction: column;
+            }
+            
+            .filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .batch-filter {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            .batch-filter select {
+                width: 100%;
+            }
+        }
+        
+        .admin-label {
+            background: var(--primary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-boxes"></i>
+                </div>
+                <div class="logo-text">快递问题件管理系统</div>
+            </div>
+            <div class="user-info">
+                <button class="admin-toggle" id="adminToggleBtn">
+                    <i class="fas fa-user-shield"></i>
+                    <span>管理员登录</span>
+                </button>
+                <div class="user-avatar">用</div>
+            </div>
+        </header>
+        
+        <div class="content-wrapper">
+            <!-- 统计卡片 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="batch-indicator">批次: BATCH-0725</div>
+                    <h3>在仓库问题件</h3>
+                    <div class="count" id="warehouseCount">632</div>
+                </div>
+                <div class="stat-card">
+                    <div class="batch-indicator">批次: BATCH-0720</div>
+                    <h3>已发出批次</h3>
+                    <div class="count" id="dispatchedCount">8</div>
+                </div>
+                <div class="stat-card">
+                    <div class="batch-indicator">本周新增</div>
+                    <h3>待处理问题件</h3>
+                    <div class="count" id="pendingCount">198</div>
+                </div>
+                <div class="stat-card">
+                    <div class="batch-indicator">本月</div>
+                    <h3>批次总数</h3>
+                    <div class="count" id="batchCount">15</div>
+                </div>
+            </div>
+            
+            <!-- 搜索区域 -->
+            <div class="search-section">
+                <h2 class="section-title">
+                    <i class="fas fa-search"></i>
+                    快递查询
+                </h2>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="输入快递单号...">
+                    <button onclick="searchData()"><i class="fas fa-search"></i> 搜索</button>
+                </div>
+                <p style="color: var(--gray); margin-top: 10px; font-size: 14px;">
+                    <i class="fas fa-info-circle"></i> 可通过快递单号查询快递状态和批次信息
+                </p>
+                <div id="searchResult" style="margin-top: 20px; display: none;">
+                    <div style="background: #f0f7ff; padding: 15px; border-radius: 10px;">
+                        <h3 style="margin-bottom: 10px;">查询结果</h3>
+                        <div id="resultContent"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 快递列表 -->
+            <div class="courier-list">
+                <div class="section-title">
+                    <极速快递i class="fas fa-list"></i>
+                    <div>快递信息列表</div>
+                    <div style="margin-left: auto; font-size: 14px; color: var(--gray);">共 <span id="totalCount">1098</span> 条记录</div>
+                </div>
+                
+                <div class="filters">
+                    <button class="filter-btn active" data-filter="all">全部</button>
+                    <button class="filter-btn" data-filter="status:在仓库">在仓库</button>
+                    <button class="filter-btn" data-filter="status:已发出">已发出</button>
+                    <button class="filter-btn" data-filter="company:中通">中通</button>
+                    <button class="filter-btn" data-filter="company:圆通">圆通</button>
+                    <button class="filter-btn" data-filter="company:顺丰">顺丰</button>
+                    <button class="filter-btn" data-filter="company:德邦">德邦</button>
+                    <button class="filter-btn" data-filter="company:邮政EMS">邮政EMS</button>
+                    
+                    <div class="batch-filter">
+                        <span>批次筛选：</span>
+                        <select id="batchFilter">
+                            <option value="all">全部批次</option>
+                            <!-- 批次选项将通过JavaScript动态生成 -->
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>来源公司</th>
+                                <th>快递单号</th>
+                                <th>问题类型</th>
+                                <th>批次信息</th>
+                                <th>登记时间</th>
+                                <th>状态</th>
+                                <th class="admin-only">操作 <span class="admin-label">管理员</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="courierTableBody">
+                            <!-- 数据将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="pagination">
+                    <button class="active">1</button>
+                    <button>2</button>
+                    <button>3</button>
+                    <button>4</button>
+                    <button>5</button>
+                    <button><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+            
+            <!-- 管理员专属区域 -->
+            <div class="admin-section">
+                <h2 class="section-title">
+                    <i class="fas fa-user-cog"></i>
+                    管理员功能 <span class="admin-label">管理员专属</span>
+                </h2>
+                
+                <div class="admin-actions">
+                    <button class="admin-btn" onclick="showNewModal()">
+                        <i class="fas fa-plus"></i> 添加新单号
+                    </button>
+                    <button class="admin-btn" onclick="exportData()">
+                        <i class="fas fa-file-export"></i> 导出所有数据
+                    </button>
+                    <button class="admin-btn" onclick="showBatchManager()">
+                        <i class="fas fa-layer-group"></i> 批次管理
+                    </button>
+                </div>
+                
+                <div class="upload-options">
+                    <div class="upload-option" onclick="showUploadModal('warehouse')">
+                        <div class="upload-icon">
+                            <i class="fas fa-warehouse"></i>
+                        </div>
+                        <h3>上传在仓库问题件</h3>
+                        <p>上传滞留仓库件的Excel文件</p>
+                    </div>
+                    <div class="upload-option" onclick="showUploadModal('dispatched')">
+                        <div class="upload-icon">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <h3>上传已发出单号</h3>
+                        <p>上传已发出的Excel文件</p>
+                    </div>
+                </div>
+                
+                <div class="template-box">
+                    <p>下载Excel模板文件，编辑后上传</p>
+                    <button class="template-btn" onclick="downloadTemplate()">
+                        <i class="fas fa-download"></i> 下载Excel模板
+                    </button>
+                    <p style="margin-top: 10px; font-size: 13px; color: var(--gray);">
+                        <i class="fas fa-info-circle"></i> 模板包含批次栏，请按格式填写数据
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <div>
+            <h3>操作成功</h3>
+            <p>数据已成功更新</p>
+        </div>
+    </div>
+    
+    <!-- 登录模态框 -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-shield"></i> 管理员登录</h2>
+                <div class="close-modal" onclick="closeModal('loginModal')">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label for="username">管理员账号</label>
+                    <input type="text" id="username" placeholder="输入管理员账号">
+                </div>
+                <div class="input-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" placeholder="输入密码">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel" onclick="closeModal('loginModal')">取消</button>
+                <button class="modal-btn confirm" onclick="login()">登录</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 添加快递模态框 -->
+    <div class="modal" id="addCourierModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus-circle"></i> 添加快递信息</h2>
+                <div class="close-modal" onclick="closeModal('addCourierModal')">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label for="courierNumber">快递单号</label>
+                    <input type="text" id="courierNumber" placeholder="输入快递单号">
+                </div>
+                <div class="input-group">
+                    <label for="courierCompany">快递公司</label>
+                    <select id="courierCompany">
+                        <option value="">选择快递公司</option>
+                        <option value="中通">中通</option>
+                        <option value="圆通">圆通</option>
+                        <option value="顺丰">顺丰</option>
+                        <option value="德邦">德邦极速快递</option>
+                        <option value="邮政EMS">邮政EMS</option>
+                        <option value="申通">申通</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="issueType">问题类型</label>
+                    <select id="issueType">
+                        <option value="">选择问题类型</option>
+                        <option value="破损">破损</option>
+                        <option value="丢失">丢失</option>
+                        <option value="延误">延误</option>
+                        <option value="地址错误">地址错误</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="batch">批次信息</label>
+                    <input type="text" id="batch" placeholder="输入批次号 (如: BATCH-0725)">
+                </div>
+                <div class="input-group">
+                    <label for="status">快递状态</label>
+                    <select id="status">
+                        <option value="在仓库">在仓库</option>
+                        <option value="已发出">已发出</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="registerDate">登记日期</label>
+                    <input type="date" id="registerDate">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel" onclick="closeModal('addCourierModal')">取消</button>
+                <button class="modal-btn confirm" onclick="addCourier()">添加</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 上传文件模态框 -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="uploadTitle"><i class="fas fa-file-upload"></i> 上传文件</h2>
+                <div class="close-modal" onclick="closeModal('uploadModal')">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>选择Excel文件</label>
+                    <input type="file" id="fileInput" accept=".xlsx, .xls">
+                </div>
+                <div id="uploadStatus" style="margin-top: 20px; display: none;">
+                    <div style="background: #f0f7ff; padding: 15px; border-radius: 10px; text-align: center;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i>
+                        <p>正在上传文件...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel" onclick="closeModal('uploadModal')">取消</button>
+                <button class="modal-btn confirm" onclick="uploadFile()">上传</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 批次管理模态框 -->
+    <div class="modal" id="batchModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-layer-group"></i> 批次管理</h2>
+                <div class="close-modal" onclick="closeModal('batchModal')">&times;</div>
+            </div>
+            <div class="modal-body">
+                <div class="admin-actions">
+                    <button class="admin-btn" onclick="showNewBatchModal()">
+                        <i class="fas fa-plus"></i> 创建新批次
+                    </button>
+                </div>
+                
+                <div class="table-container" style="max-height: 400px; margin-top: 20px;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>批次号</th>
+                                <th>创建日期</th>
+                                <th>单号数量</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>BATCH-0725</td>
+                                <td>2023-07-25</td>
+                                <td>42</td>
+                                <td><span class="status-badge status-dispatched">已发出</span></td>
+                                <td>
+                                    <button class="action-btn edit-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn delete-btn" onclick="confirmBatchDelete('BATCH-0725')"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>BATCH-0720</td>
+                                <td>2023-07-20</td>
+                                <td>35</td>
+                                <td><span class="status-badge status-dispatched">已发出</span></td>
+                                <td>
+                                    <button class="action-btn edit-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn delete-btn" onclick="confirmBatchDelete('BATCH-0720')"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>BATCH-0718</td>
+                                <td>2023-07-18</td>
+                                <td>28</td>
+                                <td><span class="status-badge status-warehouse">在仓库</span></td>
+                                <td>
+                                    <button class="action-btn edit-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn delete-btn" onclick="confirmBatchDelete('BATCH-0718')"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>BATCH-0715</td>
+                                <td>2023-07-15</td>
+                                <td>22</td>
+                                <td><span class="status-badge status-warehouse">在仓库</span></td>
+                                <td>
+                                    <button class="action-btn edit-btn"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn delete-btn" onclick="confirmBatchDelete('BATCH-0715')"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 模拟快递数据（包含批次信息）
+        const courierData = [
+            { id: 1, company: "中通", number: "75761365943766", issue: "破损", batch: "BATCH-0725", date: "2023-07-15", status: "在仓库" },
+            { id: 2, company: "申通", number: "77637205707615", issue: "丢失", batch: "BATCH-0720", date: "2023-07-16", status: "在仓库" },
+            { id: 3, company: "圆通", number: "89245678321098", issue: "延误", batch: "BATCH-0725", date: "2023-07-14", status: "在仓库" },
+            { id: 4, company: "顺丰", number: "65432109876543", issue: "破损", batch: "BATCH-0720", date: "2023-07-17", status: "在仓库" },
+            { id: 5, company: "德邦", number: "12345678901234", issue: "地址错误", batch: "BATCH-0718", date: "2023-07-13", status: "已发出" },
+            { id: 6, company: "邮政EMS", number: "56789012345678", issue: "延误", batch: "BATCH-0718", date: "2023-07-18", status: "已发出" },
+            { id: 7, company: "中通", number: "23456789012345", issue: "破损", batch: "BATCH-0715", date: "2023-07-19", status: "已发出" },
+            { id: 8, company: "顺丰", number: "34567890123456", issue: "延误", batch: "BATCH-0715", date: "2023-07-12", status: "已发出" }
+        ];
+        
+        // 当前登录状态
+        let isAdmin = false;
+        let currentUploadType = "";
+        let currentFilters = {
+            status: null,
+            company: null,
+            batch: "all"
+        };
+        
+        // 初始化页面
+        function initializePage() {
+            renderCourierTable();
+            updateStats();
+            setupBatchFilter();
+            setupFilterButtons();
+            
+            // 设置默认日期
+            document.getElementById('registerDate').valueAsDate = new Date();
+            
+            // 绑定管理员切换按钮
+            document.getElementById('adminToggleBtn').addEventListener('click', function() {
+                if (isAdmin) {
+                    logoutAdmin();
+                } else {
+                    showLoginModal();
+                }
+            });
+        }
+        
+        // 设置批次筛选下拉框
+        function setupBatchFilter() {
+            const batchFilter = document.getElementById('batchFilter');
+            batchFilter.innerHTML = '<option value="all">全部批次</option>';
+            
+            // 获取所有批次号并去重
+            const batches = [...new Set(courierData.map(item => item.batch))];
+            
+            // 添加选项
+            batches.forEach(batch => {
+                const option = document.createElement('option');
+                option.value = batch;
+                option.textContent = batch;
+                batchFilter.appendChild(option);
+            });
+            
+            // 添加批次筛选事件
+            batchFilter.addEventListener('change', function() {
+                currentFilters.batch = this.value;
+                applyFilters();
+            });
+        }
+        
+        // 设置筛选按钮事件
+        function setupFilterButtons() {
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // 移除所有按钮的active类
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    
+                    // 添加active类到当前按钮
+                    this.classList.add('active');
+                    
+                    const filter = this.dataset.filter;
+                    if (filter === 'all') {
+                        // 重置所有筛选
+                        currentFilters.status = null;
+                        currentFilters.company = null;
+                    } else {
+                        const [type, value] = filter.split(':');
+                        if (type === 'status') {
+                            currentFilters.status = value;
+                            currentFilters.company = null;
+                        } else if (type === 'company') {
+                            currentFilters.company = value;
+                            currentFilters.status = null;
+                        }
+                    }
+                    
+                    applyFilters();
+                });
+            });
+        }
+        
+        // 应用所有筛选条件
+        function applyFilters() {
+            let filteredData = courierData;
+            
+            // 应用状态筛选
+            if (currentFilters.status) {
+                filteredData = filteredData.filter(item => item.status === currentFilters.status);
+            }
+            
+            // 应用公司筛选
+            if (currentFilters.company) {
+                filteredData = filteredData.filter(item => item.company === currentFilters.company);
+            }
+            
+            // 应用批次筛选
+            if (currentFilters.batch && currentFilters.batch !== 'all') {
+                filteredData = filteredData.filter(item => item.batch === currentFilters.batch);
+            }
+            
+            renderCourierTable(filteredData);
+        }
+        
+        // 渲染快递表格
+        function renderCourierTable(data = courierData) {
+            const tableBody = document.getElementById('courierTableBody');
+            tableBody.innerHTML = '';
+            
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                
+                // 公司名称带样式
+                let companyBadge = '';
+                switch(item.company) {
+                    case '中通': companyBadge = 'badge-zt'; break;
+                    case '圆通': companyBadge = 'badge-yt'; break;
+                    case '顺丰': companyBadge = 'badge-sf'; break;
+                    case '德邦': companyBadge = 'badge-db'; break;
+                    case '邮政EMS': companyBadge = 'badge-yz'; break;
+                    case '申通': companyBadge = 'badge-st'; break;
+                    default: companyBadge = '';
+                }
+                
+                // 状态带样式
+                const statusClass = item.status === "在仓库" ? "status-warehouse" : "status-dispatched";
+                
+                // 操作列（管理员可见）
+                let operations = '<td class="admin-only"></td>';
+                if (isAdmin) {
+                    operations = `
+                        <td class="admin-only">
+                            <button class="action-btn edit-btn" onclick="editCourier(${item.id})"><i class="fas fa-edit"></i></button>
+                            <button class="action-btn delete-btn" onclick="confirmDelete(${item.id})"><i class="fas fa-trash"></i></button>
+                        </td>
+                    `;
+                }
+                
+                row.innerHTML = `
+                    <td><span class="courier-badge ${companyBadge}">${item.company}</span></td>
+                    <td>${item.number}</td>
+                    <td>${item.issue}</td>
+                    <td><span class="batch-badge">${item.batch}</span></td>
+                    <td>${item.date}</td>
+                    <td><span class="status-badge ${statusClass}">${item.status}</span></td>
+                    ${operations}
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // 更新总数
+            document.getElementById('totalCount').textContent = data.length;
+        }
+        
+        // 更新统计数据
+        function updateStats() {
+            const warehouseCount = courierData.filter(item => item.status === "在仓库").length;
+            const dispatchedCount = courierData.filter(item => item.status === "已发出").length;
+            const pendingCount = Math.floor(warehouseCount * 0.3);
+            const batchCount = new Set(courierData.map(item => item.batch)).size;
+            
+            document.getElementById('warehouseCount').textContent = warehouseCount;
+            document.getElementById('dispatchedCount').textContent = dispatchedCount;
+            document.getElementById('pendingCount').textContent = pendingCount;
+            document.getElementById('batchCount').textContent = batchCount;
+        }
+        
+        // 显示登录模态框
+        function showLoginModal() {
+            document.getElementById('loginModal').style.display = 'flex';
+        }
+        
+        // 关闭模态框
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        // 登录功能
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if(username === 'admin' && password === '123456') {
+                isAdmin = true;
+                document.body.classList.add('admin-view');
+                document.getElementById('adminToggleBtn').innerHTML = '<i class="fas fa-sign-out-alt"></i> <span>退出管理</span>';
+                closeModal('loginModal');
+                showNotification('登录成功', '管理员功能已启用');
+                renderCourierTable(); // 重新渲染表格显示操作按钮
+            } else {
+                showNotification('登录失败', '管理员账号或密码错误', true);
+            }
+        }
+        
+        // 退出管理员
+        function logoutAdmin() {
+            isAdmin = false;
+            document.body.classList.remove('admin-view');
+            document.getElementById('adminToggleBtn').innerHTML = '<i class="fas fa-user-shield"></i> <span>管理员登录</span>';
+            showNotification('已退出管理', '返回普通用户视图');
+            renderCourierTable(); // 重新渲染表格隐藏操作按钮
+        }
+        
+        // 显示添加快递模态框
+        function showNewModal() {
+            document.getElementById('courierNumber').value = '';
+            document.getElementById('courierCompany').value = '';
+            document.getElementById('issueType').value = '';
+            document.getElementById('batch').value = 'BATCH-' + new Date().toISOString().slice(5,7) + new Date().toISOString().slice(8,10);
+            document.getElementById('status').value = '在仓库';
+            document.getElementById('registerDate').valueAsDate = new Date();
+            document.getElementById('addCourierModal').style.display = 'flex';
+        }
+        
+        // 添加快递
+        function addCourier() {
+            const number = document.getElementById('courierNumber').value;
+            const company = document.getElementById('courierCompany').value;
+            const issue = document.getElementById('issueType').value;
+            const batch = document.getElementById('batch').value;
+            const status = document.getElementById('status').value;
+            const date = document.getElementById('registerDate').value;
+            
+            if (!number || !company || !issue || !batch) {
+                showNotification('添加失败', '请填写所有必填字段', true);
+                return;
+            }
+            
+            // 检查单号是否已存在
+            if (courierData.some(item => item.number === number)) {
+                showNotification('添加失败', '该快递单号已存在', true);
+                return;
+            }
+            
+            // 添加新快递
+            const newId = courierData.length > 0 ? Math.max(...courierData.map(item => item.id)) + 1 : 1;
+            courierData.push({
+                id: newId,
+                company: company,
+                number: number,
+                issue: issue,
+                batch: batch,
+                date: date,
+                status: status
+            });
+            
+            // 更新批次筛选器
+            setupBatchFilter();
+            
+            renderCourierTable();
+            updateStats();
+            closeModal('addCourierModal');
+            showNotification('添加成功', '快递信息已添加');
+        }
+        
+        // 编辑快递
+        function editCourier(id) {
+            const item = courierData.find(item => item.id === id);
+            if (item) {
+                document.getElementById('courierNumber').value = item.number;
+                document.getElementById('courierCompany').value = item.company;
+                document.getElementById('issueType').value = item.issue;
+                document.getElementById('batch').value = item.batch;
+                document.getElementById('status').value = item.status;
+                document.getElementById('registerDate').value = item.date;
+                document.getElementById('addCourierModal').style.display = 'flex';
+            }
+        }
+        
+        // 删除快递确认
+        function confirmDelete(id) {
+            if (confirm('确定要删除这个快递信息吗？此操作不可撤销！')) {
+                deleteCourier(id);
+            }
+        }
+        
+        // 删除快递
+        function deleteCourier(id) {
+            const index = courierData.findIndex(item => item.id === id);
+            if (index !== -1) {
+                courierData.splice(index, 1);
+                renderCourierTable();
+                updateStats();
+                showNotification('删除成功', '快递信息已删除');
+                
+                // 更新批次筛选器
+                setupBatchFilter();
+            }
+        }
+        
+        // 批次删除确认
+        function confirmBatchDelete(batchId) {
+            if (confirm(`确定要删除批次 ${batchId} 吗？此操作会删除该批次所有快递信息！`)) {
+                // 在实际应用中，这里会执行批次删除逻辑
+                showNotification('删除成功', `批次 ${batchId} 已删除`);
+            }
+        }
+        
+        // 显示上传文件模态框
+        function showUploadModal(type) {
+            currentUploadType = type;
+            const title = type === 'warehouse' ? '上传在仓库问题件' : '上传已发出单号';
+            document.getElementById('uploadTitle').innerHTML = `<i class="fas fa-file-upload"></i> ${title}`;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('uploadStatus').style.display = 'none';
+            document.getElementById('uploadModal').style.display = 'flex';
+        }
+        
+        // 上传文件
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showNotification('上传失败', '请选择文件', true);
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                showNotification('上传失败', '请选择Excel文件', true);
+                return;
+            }
+            
+            // 显示上传状态
+            document.getElementById('uploadStatus').style.display = 'block';
+            
+            // 模拟上传过程
+            setTimeout(() => {
+                document.getElementById('uploadStatus').style.display = 'none';
+                closeModal('uploadModal');
+                
+                // 模拟添加一些数据
+                const newCount = Math.floor(Math.random() * 5) + 2;
+                for (let i = 0; i < newCount; i++) {
+                    const newId = courierData.length > 0 ? Math.max(...courierData.map(item => item.id)) + 1 : 1;
+                    const status = currentUploadType === 'warehouse' ? '在仓库' : '已发出';
+                    const companies = ['中通', '圆通', '顺丰', '德邦', '邮政EMS', '申通'];
+                    const issues = ['破损', '丢失', '延误', '地址错误', '其他'];
+                    const batches = ['BATCH-0725', 'BATCH-0720', 'BATCH-0718', 'BATCH-0715'];
+                    
+                    courierData.push({
+                        id: newId,
+                        company: companies[Math.floor(Math.random() * companies.length)],
+                        number: Math.floor(Math.random() * 100000000000000).toString().padStart(14, '0'),
+                        issue: issues[Math.floor(Math.random() * issues.length)],
+                        batch: batches[Math.floor(Math.random() * batches.length)],
+                        date: new Date().toISOString().split('T')[0],
+                        status: status
+                    });
+                }
+                
+                renderCourierTable();
+                updateStats();
+                
+                // 更新批次筛选器
+                setupBatchFilter();
+                
+                const typeName = currentUploadType === 'warehouse' ? '在仓库问题件' : '已发出单号';
+                showNotification('上传成功', `${typeName}数据已导入，新增${newCount}条记录`);
+            }, 2000);
+        }
+        
+        // 下载Excel模板
+        function downloadTemplate() {
+            // 创建模拟的Excel文件
+            const templateData = [
+                ["快递单号", "快递公司", "问题类型", "批次号", "状态", "发出时间"],
+                ["12345678901234", "中通", "破损", "BATCH-0725", "已发出", "2023-07-25"],
+                ["", "", "", "", "滞留仓库", ""],
+                ["说明：", "", "", "", "", ""],
+                ["1. 状态默认为'已发出'，问题件请填写'滞留仓库'", "", "", "", "", ""],
+                ["2. 批次号格式为 BATCH-月日 (如: BATCH-0725)", "", "", "", "", ""],
+                ["3. 发出时间只有已发出单号需要填写", "", "", "", "", ""]
+            ];
+            
+            // 创建工作簿
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(template极速快递Data);
+            XLSX.utils.book_append_sheet(wb, ws, "快递数据模板");
+            
+            // 导出文件
+            XLSX.writeFile(wb, "快递数据模板.xlsx");
+            showNotification('模板下载', 'Excel模板已下载');
+        }
+        
+        // 导出所有数据
+        function exportData() {
+            // 准备数据
+            const exportData = courierData.map(item => ({
+                "快递单号": item.number,
+                "快递公司": item.company,
+                "问题类型": item.issue,
+                "批次号": item.batch,
+                "状态": item.status,
+                "登记时间": item.date
+            }));
+            
+            // 创建工作簿
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            XLSX.utils.book_append_sheet(wb, ws, "快递数据");
+            
+            // 导出文件
+            XLSX.writeFile(wb, "快递问题件数据.xlsx");
+            showNotification('数据导出', '所有数据已导出为Excel文件');
+        }
+        
+        // 搜索数据
+        function searchData() {
+            const searchInput = document.getElementById('searchInput').value.trim();
+            const resultDiv = document.getElementById('searchResult');
+            const contentDiv = document.getElementById('resultContent');
+            
+            if (!searchInput) {
+                showNotification('搜索提示', '请输入快递单号', true);
+                return;
+            }
+            
+            // 查找匹配的快递
+            const result = courierData.filter(item => item.number.includes(searchInput));
+            
+            if (result.length > 0) {
+                let html = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">';
+                result.forEach(item => {
+                    const statusClass = item.status === "在仓库" ? "status-warehouse" : "status-dispatched";
+                    html += `
+                        <div style="background: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <strong>${item.number}</strong>
+                                <span class="status-badge ${statusClass}">${item.status}</span>
+                            </div>
+                            <div>公司: ${item.company}</div>
+                            <div>问题: ${item.issue}</div>
+                            <div>批次: <span class="batch-badge">${item.batch}</span></div>
+                            <div>日期: ${item.date}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                contentDiv.innerHTML = html;
+                resultDiv.style.display = 'block';
+            } else {
+                contentDiv.innerHTML = '<div style="text-align: center; padding: 20px;"><i class="fas fa-exclamation-circle" style="font-size: 24px; color: var(--danger); margin-bottom: 10px;"></i><p>没有找到匹配的快递单号</p></div>';
+                resultDiv.style.display = 'block';
+            }
+        }
+        
+        // 显示批次管理
+        function showBatchManager() {
+            document.getElementById('batchModal').style.display = 'flex';
+        }
+        
+        // 显示通知
+        function showNotification(title, message, isError = false) {
+            const notification = document.getElementById('notification');
+            notification.querySelector('h3').textContent = title;
+            notification.querySelector('p').textContent = message;
+            
+            if (isError) {
+                notification.classList.add('error');
+            } else {
+                notification.classList.remove('error');
+            }
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 页面加载时初始化
+        window.onload = initializePage;
+    </script>
+</body>
+</html>
